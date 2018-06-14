@@ -208,9 +208,9 @@ void decisiontree(cv::Mat& trainingData, cv::Mat& trainingClasses, cv::Mat& test
 	// define output node as numerical
 	var_type.at<unsigned int>(0,2) = CV_VAR_NUMERICAL;
 
-	dtree.train(trainingData,CV_ROW_SAMPLE, trainingClasses, cv::Mat(), cv::Mat(), var_type, cv::Mat(), CvDTreeParams());
-	cv::Mat predicted(testClasses.rows, 1, CV_32F);
-	for (int i = 0; i < testData.rows; i++) {
+        dtree.train(trainingData,CV_ROW_SAMPLE, trainingClasses, cv::Mat(), cv::Mat(), var_type, cv::Mat(), CvDTreeParams());
+        cv::Mat predicted(testClasses.rows, 1, CV_32F);
+        for (int i = 0; i < testData.rows; i++) {
 		const cv::Mat sample = testData.row(i);
 		CvDTreeNode* prediction = dtree.predict(sample);
 		predicted.at<float> (i, 0) = prediction->value;
@@ -218,9 +218,44 @@ void decisiontree(cv::Mat& trainingData, cv::Mat& trainingClasses, cv::Mat& test
 
 	cout << "Accuracy_{TREE} = " << evaluate(predicted, testClasses) << endl;
 	plot_binary(testData, predicted, "Predictions tree");
+        dtree.save("./decision_tree.xml");
+
+        CvDTree dtree2;
+        dtree2.load("./decision_tree.xml");
+	cv::Mat predicted2(testClasses.rows, 1, CV_32F);
+	for (int i = 0; i < testData.rows; i++) {
+		const cv::Mat sample = testData.row(i);
+		CvDTreeNode* prediction = dtree2.predict(sample);
+		predicted2.at<float> (i, 0) = prediction->value;
+	}
+
+	cout << "Accuracy_{TREE} = " << evaluate(predicted2, testClasses) << endl;
+	plot_binary(testData, predicted2, "Predictions tree2");
 
 }
 
+void foresttree(cv::Mat& trainingData, cv::Mat& trainingClasses, cv::Mat& testData, cv::Mat& testClasses) {
+
+        CvRTrees rtree;
+	cv::Mat var_type(3, 1, CV_8U);
+
+	// define attributes as numerical
+	var_type.at<unsigned int>(0,0) = CV_VAR_NUMERICAL;
+	var_type.at<unsigned int>(0,1) = CV_VAR_NUMERICAL;
+	// define output node as numerical
+	var_type.at<unsigned int>(0,2) = CV_VAR_NUMERICAL;
+
+	rtree.train(trainingData,CV_ROW_SAMPLE, trainingClasses, cv::Mat(), cv::Mat(), var_type, cv::Mat(), CvRTParams());
+	cv::Mat predicted(testClasses.rows, 1, CV_32F);
+	for (int i = 0; i < testData.rows; i++) {
+		const cv::Mat sample = testData.row(i);
+		predicted.at<float> (i, 0) = rtree.predict(sample);
+	}
+
+	cout << "Accuracy_{TREE} = " << evaluate(predicted, testClasses) << endl;
+	plot_binary(testData, predicted, "Predictions forest tree");
+
+}
 
 int main() {
 
@@ -241,6 +276,7 @@ int main() {
 	knn(trainingData, trainingClasses, testData, testClasses, 3);
 	bayes(trainingData, trainingClasses, testData, testClasses);
 	decisiontree(trainingData, trainingClasses, testData, testClasses);
+	foresttree(trainingData, trainingClasses, testData, testClasses);
 
 	cv::waitKey();
 
